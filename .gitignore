@@ -1,0 +1,9 @@
+.tools/
+.tmp-dotnet-home/
+bin/
+obj/
+*.user
+toolbar-smoke.png
+toolbar-compact-smoke.png
+settings-smoke.png
+capture-smoke.png
