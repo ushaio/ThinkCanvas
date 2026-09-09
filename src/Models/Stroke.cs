@@ -3,12 +3,6 @@ using System.Windows.Media;
 
 namespace ThinkCanvas;
 
-public enum OverlayMode
-{
-    Passthrough,
-    Writing
-}
-
 public readonly record struct StrokePoint(Point Position, float Pressure, long Timestamp);
 
 public sealed class Stroke

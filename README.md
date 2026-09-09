@@ -6,6 +6,24 @@ ThinkCanvas 是一个 Windows WPF 输入验证 Demo，用于验证数位板、�
 
 当前版本：`0.0.1`
 
+## 项目结构
+
+```text
+ThinkCanvas/
+├── src/
+│   ├── Configuration/  # 应用设置、校验与持久化
+│   ├── Interop/        # Windows 原生 API 封装
+│   ├── Models/         # 领域模型与状态类型
+│   ├── Rendering/      # 笔迹渲染
+│   ├── Services/       # 截图等应用服务
+│   └── Views/          # WPF 窗口及其后台代码
+├── tests/              # 交互式桌面烟雾测试
+├── App.xaml(.cs)       # WPF 应用入口
+└── ThinkCanvas.csproj  # 主项目配置
+```
+
+根目录仅保留应用入口、项目配置和仓库级文档；新增实现应按职责放入 `src` 下对应目录。
+
 ## 功能概览
 
 - 操作模式：Overlay 对鼠标和笔穿透到底层应用。
