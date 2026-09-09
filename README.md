@@ -40,6 +40,8 @@ ThinkCanvas 是一个 Windows WPF 输入验证 Demo，用于验证数位板、�
 
 项目目标框架为 `.NET 10 Windows`，构建需要安装 .NET 10 SDK。当前可运行版本位于 `bin/Release/net10.0-windows/ThinkCanvas.exe`；更新后请先退出旧实例，再启动新版本。
 
+推送 `v*` 标签会触发 GitHub Actions 的 Release 打包流程，使用 Release 配置生成 `win-x64` 自包含单文件 `ThinkCanvas.exe`，并同时提供 ZIP 压缩包。手动运行工作流只上传 Actions artifact，不会创建 Release。
+
 ## 输入回归验证
 
 测试项目为 [`tests/ThinkCanvas.SmokeTests.csproj`](tests/ThinkCanvas.SmokeTests.csproj)，需要交互式 Windows 桌面。先构建测试项目，再运行生成的 `ThinkCanvas.SmokeTests.exe`。测试会短暂显示窗口、移动鼠标并模拟拖动；运行期间请勿同时操作鼠标。

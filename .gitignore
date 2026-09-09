@@ -1,5 +1,6 @@
 .tools/
 .tmp-dotnet-home/
+artifacts/
 bin/
 obj/
 *.user
