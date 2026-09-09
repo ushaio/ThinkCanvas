@@ -4,7 +4,7 @@ ThinkCanvas 是一个 Windows WPF 输入验证 Demo，用于验证数位板、�
 
 本项目采用 [GNU General Public License v3.0](LICENSE)（GPL-3.0-only）授权。
 
-当前版本：`0.0.1`
+当前版本：`0.0.2`
 
 ## 项目结构
 
