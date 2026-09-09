@@ -26,16 +26,18 @@ public sealed record AppSettings
 {
     public Shortcut ToggleShortcut { get; init; } = new(Key.A, ModifierKeys.Control | ModifierKeys.Shift);
     public Shortcut CaptureShortcut { get; init; } = new(Key.S, ModifierKeys.Control | ModifierKeys.Shift);
+    public Shortcut EraserShortcut { get; init; } = new(Key.E, ModifierKeys.Control | ModifierKeys.Shift);
+    public bool StartWithWindows { get; init; }
     public bool UseSolidBackground { get; init; }
     public string BackgroundColor { get; init; } = "#FFFFFF";
 
     public void Validate()
     {
-        if (ToggleShortcut is null || CaptureShortcut is null ||
-            !ToggleShortcut.IsValid || !CaptureShortcut.IsValid)
+        if (ToggleShortcut is null || CaptureShortcut is null || EraserShortcut is null ||
+            !ToggleShortcut.IsValid || !CaptureShortcut.IsValid || !EraserShortcut.IsValid)
             throw new ArgumentException("快捷键需要包含 Ctrl、Alt 或 Shift，以及一个普通按键。");
-        if (ToggleShortcut == CaptureShortcut)
-            throw new ArgumentException("截图与模式切换不能使用相同的快捷键。");
+        if (new[] { ToggleShortcut, CaptureShortcut, EraserShortcut }.Distinct().Count() != 3)
+            throw new ArgumentException("截图、模式切换与橡皮擦不能使用相同的快捷键。");
         ParseBackgroundColor(BackgroundColor);
     }
 

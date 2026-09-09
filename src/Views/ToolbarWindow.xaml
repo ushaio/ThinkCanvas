@@ -65,6 +65,9 @@
       <RadioButton x:Name="ToggleButton" Style="{StaticResource Mode}" GroupName="Mode" Click="ToggleButton_OnClick" AutomationProperties.Name="书写模式">
        <StackPanel Orientation="Horizontal"><TextBlock Style="{StaticResource Glyph}" Text="&#xE70F;" FontSize="14" Margin="0,0,6,0"/><TextBlock Text="书写"/></StackPanel>
       </RadioButton>
+      <RadioButton x:Name="EraserButton" Style="{StaticResource Mode}" GroupName="Mode" Click="EraserButton_OnClick" AutomationProperties.Name="橡皮擦模式">
+       <StackPanel Orientation="Horizontal"><TextBlock Style="{StaticResource Glyph}" Text="&#xE75C;" FontSize="14" Margin="0,0,6,0"/><TextBlock Text="橡皮擦"/></StackPanel>
+      </RadioButton>
      </StackPanel>
     </Border>
     <Border Style="{StaticResource Divider}"/>

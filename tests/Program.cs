@@ -51,7 +51,8 @@ internal static class Program
                 overlay = new OverlayWindow(new AppSettings
                 {
                     ToggleShortcut = new Shortcut(Key.F20, ModifierKeys.Control | ModifierKeys.Alt),
-                    CaptureShortcut = new Shortcut(Key.F21, ModifierKeys.Control | ModifierKeys.Alt)
+                    CaptureShortcut = new Shortcut(Key.F21, ModifierKeys.Control | ModifierKeys.Alt),
+                    EraserShortcut = new Shortcut(Key.F19, ModifierKeys.Control | ModifierKeys.Alt)
                 });
                 toolbar = new ToolbarWindow(overlay);
                 overlay.Toolbar = toolbar;
@@ -98,6 +99,18 @@ internal static class Program
                 ((Button)toolbar.FindName("ClearButton")).RaiseEvent(new RoutedEventArgs(Button.ClickEvent));
                 Assert(((Popup)toolbar.FindName("ClearPopup")).IsOpen && overlay.HasStrokes, "Clear requests confirmation without deleting ink");
                 ((Popup)toolbar.FindName("ClearPopup")).IsOpen = false;
+                ((RadioButton)toolbar.FindName("EraserButton")).RaiseEvent(new RoutedEventArgs(Button.ClickEvent));
+                await Task.Delay(100);
+                SetCursorPos(probe.X + 40, probe.Y + 16);
+                mouse_event(0x0002, 0, 0, 0, 0);
+                mouse_event(0x0004, 0, 0, 0, 0);
+                await Task.Delay(100);
+                Assert(overlay.Mode == OverlayMode.Erasing &&
+                    ((RadioButton)toolbar.FindName("EraserButton")).IsChecked == true,
+                    "Eraser button selects erasing mode");
+                Assert(!overlay.HasStrokes && !((Button)toolbar.FindName("ClearButton")).IsEnabled,
+                    "Eraser removes a hit stroke and updates toolbar state");
+                overlay.SetMode(OverlayMode.Writing);
                 ((Slider)toolbar.FindName("WidthSlider")).Value = 4;
 
                 var frame = new RenderTargetBitmap((int)toolbar.ActualWidth, (int)toolbar.ActualHeight,
@@ -237,7 +250,7 @@ internal static class Program
         var desktopImage = ScreenCapture.Compose(bounds, image, Colors.White, Matrix.Identity, _ => { });
         desktopImage.CopyPixels(pixels, 120 * 4, 0);
         Assert(pixels[0] == 200, "Desktop background is retained when solid fill is disabled");
-        var settings = new AppSettings { UseSolidBackground = true, BackgroundColor = "#123456" };
+        var settings = new AppSettings { UseSolidBackground = true, BackgroundColor = "#123456", StartWithWindows = true };
         settings.Validate();
         var restored = System.Text.Json.JsonSerializer.Deserialize<AppSettings>(System.Text.Json.JsonSerializer.Serialize(settings));
         Assert(restored == settings, "Shortcuts and capture background survive JSON round trip");
@@ -253,6 +266,8 @@ internal static class Program
         finally { if (File.Exists(path)) File.Delete(path); }
         try { (settings with { ToggleShortcut = settings.CaptureShortcut }).Validate(); throw new Exception("Duplicate shortcuts accepted"); }
         catch (ArgumentException) { Console.WriteLine("PASS: Duplicate shortcuts rejected"); }
+        try { (settings with { EraserShortcut = settings.CaptureShortcut }).Validate(); throw new Exception("Duplicate eraser shortcut accepted"); }
+        catch (ArgumentException) { Console.WriteLine("PASS: Duplicate eraser shortcut rejected"); }
         try { (settings with { BackgroundColor = "#00FFFFFF" }).Validate(); throw new Exception("Transparent background accepted"); }
         catch (ArgumentException) { Console.WriteLine("PASS: Invalid background rejected"); }
     }
@@ -268,8 +283,8 @@ internal static class Program
                 CaptureShortcut = new Shortcut(Key.F22, ModifierKeys.Control | ModifierKeys.Alt)
             }, out var error);
             Assert(!success && error.Length > 0 && overlay.Settings == previous &&
-                overlay.CaptureHotkeyAvailable && overlay.ToggleHotkeyAvailable,
-                "Shortcut conflict restores both previous bindings without saving");
+                overlay.CaptureHotkeyAvailable && overlay.ToggleHotkeyAvailable && overlay.EraserHotkeyAvailable,
+                "Shortcut conflict restores all previous bindings without saving");
         }
         finally { UnregisterHotKey(target, 73); }
     }

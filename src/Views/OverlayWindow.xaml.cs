@@ -24,6 +24,7 @@ public partial class OverlayWindow : Window
     private OverlayMode _mode;
     private bool _toggleHotkeyRegistered;
     private bool _captureHotkeyRegistered;
+    private bool _eraserHotkeyRegistered;
     private bool _escapeHotkeyRegistered;
     private double _width = 4;
     private Color _color = Colors.Red;
@@ -31,6 +32,7 @@ public partial class OverlayWindow : Window
     public event Action<float?>? PressureChanged;
     public bool ToggleHotkeyAvailable => _toggleHotkeyRegistered;
     public bool CaptureHotkeyAvailable => _captureHotkeyRegistered;
+    public bool EraserHotkeyAvailable => _eraserHotkeyRegistered;
     public AppSettings Settings { get; private set; }
     public OverlayMode Mode => _mode;
     public bool IsBusy { get; set; }
@@ -79,13 +81,15 @@ public partial class OverlayWindow : Window
 
     public void SetMode(OverlayMode mode)
     {
+        if (_mode != mode)
+            FinishStroke();
         _mode = mode;
         // Layered windows skip alpha-zero pixels before WPF input hit testing.
         // Keep blank pixels hittable while writing; the tint is only 1/255 black.
-        DrawingCanvas.Background = mode == OverlayMode.Writing
+        DrawingCanvas.Background = mode != OverlayMode.Passthrough
             ? new SolidColorBrush(Color.FromArgb(1, 0, 0, 0))
             : Brushes.Transparent;
-        DrawingCanvas.Cursor = mode == OverlayMode.Writing ? Cursors.Cross : null;
+        DrawingCanvas.Cursor = mode != OverlayMode.Passthrough ? Cursors.Cross : null;
         if (_hwnd == 0)
             return;
 
@@ -101,9 +105,7 @@ public partial class OverlayWindow : Window
             NativeMethods.SWP_NOMOVE | NativeMethods.SWP_NOSIZE |
             NativeMethods.SWP_NOACTIVATE | NativeMethods.SWP_FRAMECHANGED);
 
-        if (mode == OverlayMode.Passthrough)
-            FinishStroke();
-        UpdateEscapeHotkey(mode == OverlayMode.Writing);
+        UpdateEscapeHotkey(mode != OverlayMode.Passthrough);
         Toolbar?.SetMode(mode);
         Toolbar?.EnsureAboveOverlay();
     }
@@ -125,6 +127,7 @@ public partial class OverlayWindow : Window
     {
         _toggleHotkeyRegistered = RegisterShortcut(1, Settings.ToggleShortcut);
         _captureHotkeyRegistered = RegisterShortcut(3, Settings.CaptureShortcut);
+        _eraserHotkeyRegistered = RegisterShortcut(4, Settings.EraserShortcut);
         Toolbar?.SetHotkeyAvailable(_toggleHotkeyRegistered);
     }
 
@@ -135,7 +138,8 @@ public partial class OverlayWindow : Window
     {
         NativeMethods.UnregisterHotKey(_hwnd, 1);
         NativeMethods.UnregisterHotKey(_hwnd, 3);
-        _toggleHotkeyRegistered = _captureHotkeyRegistered = false;
+        NativeMethods.UnregisterHotKey(_hwnd, 4);
+        _toggleHotkeyRegistered = _captureHotkeyRegistered = _eraserHotkeyRegistered = false;
     }
 
     public void ResumeShortcuts()
@@ -152,20 +156,30 @@ public partial class OverlayWindow : Window
 
         NativeMethods.UnregisterHotKey(_hwnd, 1);
         NativeMethods.UnregisterHotKey(_hwnd, 3);
+        NativeMethods.UnregisterHotKey(_hwnd, 4);
         _toggleHotkeyRegistered = RegisterShortcut(1, settings.ToggleShortcut);
         _captureHotkeyRegistered = RegisterShortcut(3, settings.CaptureShortcut);
+        _eraserHotkeyRegistered = RegisterShortcut(4, settings.EraserShortcut);
         error = !_toggleHotkeyRegistered ? $"切换快捷键 {settings.ToggleShortcut} 已被占用。" :
-            !_captureHotkeyRegistered ? $"截图快捷键 {settings.CaptureShortcut} 已被占用。" : "";
+            !_captureHotkeyRegistered ? $"截图快捷键 {settings.CaptureShortcut} 已被占用。" :
+            !_eraserHotkeyRegistered ? $"橡皮擦快捷键 {settings.EraserShortcut} 已被占用。" : "";
         if (error.Length == 0)
         {
-            try { SettingsStore.Save(settings); }
-            catch (Exception exception) when (exception is System.IO.IOException or UnauthorizedAccessException)
+            try
+            {
+                StartupManager.SetEnabled(settings.StartWithWindows);
+                SettingsStore.Save(settings);
+            }
+            catch (Exception exception) when (exception is System.IO.IOException or UnauthorizedAccessException or System.Security.SecurityException)
             { error = $"无法保存设置：{exception.Message}"; }
         }
         if (error.Length != 0)
         {
             NativeMethods.UnregisterHotKey(_hwnd, 1);
             NativeMethods.UnregisterHotKey(_hwnd, 3);
+            NativeMethods.UnregisterHotKey(_hwnd, 4);
+            try { StartupManager.SetEnabled(previous.StartWithWindows); }
+            catch { }
             Settings = previous;
             RegisterHotkeys();
             return false;
@@ -190,6 +204,8 @@ public partial class OverlayWindow : Window
             NativeMethods.UnregisterHotKey(_hwnd, 1);
         if (_captureHotkeyRegistered)
             NativeMethods.UnregisterHotKey(_hwnd, 3);
+        if (_eraserHotkeyRegistered)
+            NativeMethods.UnregisterHotKey(_hwnd, 4);
         if (_escapeHotkeyRegistered)
             NativeMethods.UnregisterHotKey(_hwnd, 2);
     }
@@ -224,21 +240,23 @@ public partial class OverlayWindow : Window
                     SetMode(OverlayMode.Passthrough);
                 else if (wParam.ToInt32() == 3)
                     CaptureRequested?.Invoke();
+                else if (wParam.ToInt32() == 4)
+                    SetMode(OverlayMode.Erasing);
                 handled = true;
                 break;
             case NativeMethods.WM_NCHITTEST when _mode == OverlayMode.Passthrough:
                 handled = true;
                 return new nint(NativeMethods.HTTRANSPARENT);
             case NativeMethods.WM_POINTERDOWN:
-                if (_mode == OverlayMode.Writing)
+                if (_mode != OverlayMode.Passthrough)
                     handled = HandlePointer(wParam, true, false);
                 break;
             case NativeMethods.WM_POINTERUPDATE:
-                if (_mode == OverlayMode.Writing)
+                if (_mode != OverlayMode.Passthrough)
                     handled = HandlePointer(wParam, false, false);
                 break;
             case NativeMethods.WM_POINTERUP:
-                if (_mode == OverlayMode.Writing)
+                if (_mode != OverlayMode.Passthrough)
                     handled = HandlePointer(wParam, false, true);
                 break;
         }
@@ -265,9 +283,19 @@ public partial class OverlayWindow : Window
         var penPoint = new StrokePoint(local, pressure, Stopwatch.GetTimestamp());
 
         if (down)
-            StartStroke(penPoint, InputSource.NativePen, hasPressure);
+        {
+            if (_mode == OverlayMode.Writing)
+                StartStroke(penPoint, InputSource.NativePen, hasPressure);
+            else
+                StartErasing(penPoint.Position, InputSource.NativePen);
+        }
         else if (_activeInput == InputSource.NativePen)
-            AppendPoint(penPoint);
+        {
+            if (_mode == OverlayMode.Writing)
+                AppendPoint(penPoint);
+            else
+                EraseAt(penPoint.Position);
+        }
 
         if (up && _activeInput == InputSource.NativePen)
             FinishStroke();
@@ -276,7 +304,7 @@ public partial class OverlayWindow : Window
 
     private void OnStylusDown(object sender, StylusDownEventArgs e)
     {
-        if (_mode != OverlayMode.Writing || _activeInput != InputSource.None)
+        if (_mode == OverlayMode.Passthrough || _activeInput != InputSource.None)
             return;
 
         var points = e.GetStylusPoints(DrawingCanvas);
@@ -284,19 +312,32 @@ public partial class OverlayWindow : Window
             return;
         var hasPressure = e.StylusDevice.TabletDevice.Type == TabletDeviceType.Stylus &&
             e.StylusDevice.TabletDevice.TabletHardwareCapabilities.HasFlag(TabletHardwareCapabilities.SupportsPressure);
-        StartStroke(ToStrokePoint(points[0]), InputSource.Stylus, hasPressure);
+        if (_mode == OverlayMode.Writing)
+            StartStroke(ToStrokePoint(points[0]), InputSource.Stylus, hasPressure);
+        else
+            StartErasing(points[0].ToPoint(), InputSource.Stylus);
         for (var i = 1; i < points.Count; i++)
-            AppendPoint(ToStrokePoint(points[i]));
+        {
+            if (_mode == OverlayMode.Writing)
+                AppendPoint(ToStrokePoint(points[i]));
+            else
+                EraseAt(points[i].ToPoint());
+        }
         DrawingCanvas.CaptureStylus();
         e.Handled = true;
     }
 
     private void OnStylusMove(object sender, StylusEventArgs e)
     {
-        if (_mode != OverlayMode.Writing || _activeInput != InputSource.Stylus)
+        if (_mode == OverlayMode.Passthrough || _activeInput != InputSource.Stylus)
             return;
         foreach (var point in e.GetStylusPoints(DrawingCanvas))
-            AppendPoint(ToStrokePoint(point));
+        {
+            if (_mode == OverlayMode.Writing)
+                AppendPoint(ToStrokePoint(point));
+            else
+                EraseAt(point.ToPoint());
+        }
         e.Handled = true;
     }
 
@@ -305,25 +346,38 @@ public partial class OverlayWindow : Window
         if (_activeInput != InputSource.Stylus)
             return;
         foreach (var point in e.GetStylusPoints(DrawingCanvas))
-            AppendPoint(ToStrokePoint(point));
+        {
+            if (_mode == OverlayMode.Writing)
+                AppendPoint(ToStrokePoint(point));
+            else
+                EraseAt(point.ToPoint());
+        }
         FinishStroke();
         e.Handled = true;
     }
 
     private void OnMouseDown(object sender, MouseButtonEventArgs e)
     {
-        if (_mode != OverlayMode.Writing || _activeInput != InputSource.None)
+        if (_mode == OverlayMode.Passthrough || _activeInput != InputSource.None)
             return;
-        StartStroke(new StrokePoint(e.GetPosition(DrawingCanvas), 0.5f, Stopwatch.GetTimestamp()), InputSource.Mouse);
+        var point = e.GetPosition(DrawingCanvas);
+        if (_mode == OverlayMode.Writing)
+            StartStroke(new StrokePoint(point, 0.5f, Stopwatch.GetTimestamp()), InputSource.Mouse);
+        else
+            StartErasing(point, InputSource.Mouse);
         DrawingCanvas.CaptureMouse();
         e.Handled = true;
     }
 
     private void OnMouseMove(object sender, MouseEventArgs e)
     {
-        if (_mode != OverlayMode.Writing || _activeInput != InputSource.Mouse || e.LeftButton != MouseButtonState.Pressed)
+        if (_mode == OverlayMode.Passthrough || _activeInput != InputSource.Mouse || e.LeftButton != MouseButtonState.Pressed)
             return;
-        AppendPoint(new StrokePoint(e.GetPosition(DrawingCanvas), 0.5f, Stopwatch.GetTimestamp()));
+        var point = e.GetPosition(DrawingCanvas);
+        if (_mode == OverlayMode.Writing)
+            AppendPoint(new StrokePoint(point, 0.5f, Stopwatch.GetTimestamp()));
+        else
+            EraseAt(point);
         e.Handled = true;
     }
 
@@ -331,7 +385,11 @@ public partial class OverlayWindow : Window
     {
         if (_activeInput != InputSource.Mouse)
             return;
-        AppendPoint(new StrokePoint(e.GetPosition(DrawingCanvas), 0.5f, Stopwatch.GetTimestamp()));
+        var point = e.GetPosition(DrawingCanvas);
+        if (_mode == OverlayMode.Writing)
+            AppendPoint(new StrokePoint(point, 0.5f, Stopwatch.GetTimestamp()));
+        else
+            EraseAt(point);
         FinishStroke();
         e.Handled = true;
     }
@@ -349,6 +407,29 @@ public partial class OverlayWindow : Window
         _activeVisual = new PressureStrokeVisual(_activeStroke);
         DrawingCanvas.Children.Add(_activeVisual);
         StrokesChanged?.Invoke();
+    }
+
+    private void StartErasing(Point point, InputSource source)
+    {
+        _activeInput = source;
+        PressureChanged?.Invoke(null);
+        EraseAt(point);
+    }
+
+    private void EraseAt(Point point)
+    {
+        var changed = false;
+        for (var i = DrawingCanvas.Children.Count - 1; i >= 0; i--)
+        {
+            if (DrawingCanvas.Children[i] is not PressureStrokeVisual visual ||
+                visual.Strokes.HitTest(point, 18).Count == 0)
+                continue;
+            DrawingCanvas.Children.RemoveAt(i);
+            _strokes.RemoveAt(i);
+            changed = true;
+        }
+        if (changed)
+            StrokesChanged?.Invoke();
     }
 
     private void AppendPoint(StrokePoint point)

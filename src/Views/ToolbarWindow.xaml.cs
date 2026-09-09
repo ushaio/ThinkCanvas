@@ -44,8 +44,10 @@ public partial class ToolbarWindow : Window
         }
 
         var writing = mode == OverlayMode.Writing;
+        var erasing = mode == OverlayMode.Erasing;
         ToggleButton.IsChecked = writing;
-        OperateButton.IsChecked = !writing;
+        EraserButton.IsChecked = erasing;
+        OperateButton.IsChecked = mode == OverlayMode.Passthrough;
         if (!writing)
         {
             PressureBar.Value = 0;
@@ -88,6 +90,8 @@ public partial class ToolbarWindow : Window
             OperateButton.ToolTip = ToggleButton.ToolTip;
             CaptureButton.ToolTip = _overlay.CaptureHotkeyAvailable ? $"截图 ({_overlay.Settings.CaptureShortcut})"
                 : "截图（快捷键已被占用）";
+            EraserButton.ToolTip = _overlay.EraserHotkeyAvailable ? $"橡皮擦 ({_overlay.Settings.EraserShortcut})"
+                : "橡皮擦（快捷键已被占用）";
         });
     }
 
@@ -111,6 +115,7 @@ public partial class ToolbarWindow : Window
     }
 
     private void ToggleButton_OnClick(object sender, RoutedEventArgs e) => _overlay.SetMode(OverlayMode.Writing);
+    private void EraserButton_OnClick(object sender, RoutedEventArgs e) => _overlay.SetMode(OverlayMode.Erasing);
     private void OperateButton_OnClick(object sender, RoutedEventArgs e) => _overlay.SetMode(OverlayMode.Passthrough);
     private void RedButton_OnClick(object sender, RoutedEventArgs e) => _overlay.SetColor(Colors.Red);
     private void BlueButton_OnClick(object sender, RoutedEventArgs e) => _overlay.SetColor(Color.FromRgb(23, 105, 210));

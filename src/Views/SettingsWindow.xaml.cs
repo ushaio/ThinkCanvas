@@ -10,15 +10,19 @@ public partial class SettingsWindow : Window
     private readonly OverlayWindow _overlay;
     private Shortcut _capture;
     private Shortcut _toggle;
+    private Shortcut _eraser;
 
     public SettingsWindow(OverlayWindow overlay)
     {
         _overlay = overlay;
         _capture = overlay.Settings.CaptureShortcut;
         _toggle = overlay.Settings.ToggleShortcut;
+        _eraser = overlay.Settings.EraserShortcut;
         InitializeComponent();
         CaptureShortcutBox.Text = _capture.ToString();
         ToggleShortcutBox.Text = _toggle.ToString();
+        EraserShortcutBox.Text = _eraser.ToString();
+        StartWithWindowsBox.IsChecked = overlay.Settings.StartWithWindows;
         SolidBackgroundBox.IsChecked = overlay.Settings.UseSolidBackground;
         ColorBox.Text = overlay.Settings.BackgroundColor;
     }
@@ -29,12 +33,19 @@ public partial class SettingsWindow : Window
         e.Handled = true;
         var shortcut = new Shortcut(e.Key == Key.System ? e.SystemKey : e.Key, Keyboard.Modifiers);
         if (!shortcut.IsValid) return;
-        if (sender == CaptureShortcutBox) _capture = shortcut; else _toggle = shortcut;
+        if (sender == CaptureShortcutBox) _capture = shortcut;
+        else if (sender == ToggleShortcutBox) _toggle = shortcut;
+        else _eraser = shortcut;
         ((TextBox)sender).Text = shortcut.ToString();
         ErrorText.Text = "";
     }
 
     private void Swatch_OnClick(object sender, RoutedEventArgs e) => ColorBox.Text = (string)((Button)sender).Tag;
+
+    private void TitleBar_OnMouseLeftButtonDown(object sender, MouseButtonEventArgs e)
+    {
+        if (e.ButtonState == MouseButtonState.Pressed) DragMove();
+    }
 
     private void Color_OnChanged(object sender, TextChangedEventArgs e)
     {
@@ -48,6 +59,8 @@ public partial class SettingsWindow : Window
         var settings = new AppSettings
         {
             CaptureShortcut = _capture, ToggleShortcut = _toggle,
+            EraserShortcut = _eraser,
+            StartWithWindows = StartWithWindowsBox.IsChecked == true,
             UseSolidBackground = SolidBackgroundBox.IsChecked == true,
             BackgroundColor = ColorBox.Text.Trim().ToUpperInvariant()
         };
