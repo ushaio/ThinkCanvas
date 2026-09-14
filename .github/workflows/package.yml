@@ -58,6 +58,25 @@ jobs:
           [xml]$project = Get-Content ThinkCanvas.csproj
           "value=$($project.Project.PropertyGroup.Version)" >> $env:GITHUB_OUTPUT
 
+      - name: Read changelog release notes
+        shell: pwsh
+        run: |
+          $version = "${{ steps.version.outputs.value }}"
+          $notes = @()
+          $capture = $false
+          foreach ($line in Get-Content CHANGELOG.md) {
+            if ($line -match ("^## v" + [regex]::Escape($version) + "\b")) {
+              $capture = $true
+              continue
+            }
+            if ($capture -and $line -match "^## ") { break }
+            if ($capture) { $notes += $line }
+          }
+          if ($notes.Count -eq 0) {
+            $notes = @("See [CHANGELOG.md](https://github.com/ushaio/ThinkCanvas/blob/main/CHANGELOG.md) for details.")
+          }
+          ($notes -join "`n") | Set-Content -Path release-notes.md -Encoding utf8
+
       - name: Package artifacts
         shell: pwsh
         run: |
@@ -85,4 +104,5 @@ jobs:
           "artifacts/ThinkCanvas-${{ steps.version.outputs.value }}-win-x64-framework-dependent.exe"
           "artifacts/ThinkCanvas/ThinkCanvas.exe"
           --title "ThinkCanvas ${{ steps.version.outputs.value }}"
+          --notes-file release-notes.md
           --generate-notes
