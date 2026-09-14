@@ -103,7 +103,8 @@
                     </StackPanel>
                     <Border Height="1" Background="#E4E8E9" Margin="0,20"/>
                     <StackPanel Orientation="Horizontal" Margin="0,0,0,16"><TextBlock Text="&#xE7E8;" FontFamily="Segoe MDL2 Assets" FontSize="15" Foreground="#21745F" VerticalAlignment="Center"/><TextBlock Text="启动" FontSize="14" FontWeight="SemiBold" Margin="9,0,0,0" VerticalAlignment="Center"/></StackPanel>
-                    <CheckBox x:Name="StartWithWindowsBox" Content="开机时自动启动 ThinkCanvas"/>
+                    <CheckBox x:Name="StartWithWindowsBox" Content="开机时自动启动 ThinkCanvas" Margin="0,0,0,10"/>
+                    <CheckBox x:Name="AskBeforeExitBox" Content="退出时显示确认提示（可先最小化到托盘）"/>
                     <TextBlock x:Name="ErrorText" Foreground="#B42318" TextWrapping="Wrap" Margin="0,14,0,0"/>
                 </StackPanel>
             </Border>

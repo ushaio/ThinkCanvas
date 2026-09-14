@@ -151,5 +151,32 @@ public partial class ToolbarWindow : Window
         try { new SettingsWindow(_overlay) { Owner = this }.ShowDialog(); }
         finally { _overlay.ResumeShortcuts(); _overlay.IsBusy = false; _overlay.SetMode(previous); }
     }
-    private void ExitButton_OnClick(object sender, RoutedEventArgs e) => Application.Current.Shutdown();
+    private void ExitButton_OnClick(object sender, RoutedEventArgs e)
+    {
+        ClosePopups();
+        var settings = _overlay.Settings;
+        if (!settings.AskBeforeExit)
+        {
+            ExecuteExit(settings.ExitAction == "Tray");
+            return;
+        }
+        if (_overlay.IsBusy) return;
+        var dialog = new ExitDialog { Owner = this };
+        _overlay.IsBusy = true;
+        bool? confirmed;
+        try { confirmed = dialog.ShowDialog(); }
+        finally { _overlay.IsBusy = false; }
+        if (confirmed != true) return;
+        if (dialog.RememberChoice)
+            _overlay.TryUpdateExitPreference(false, dialog.MinimizeToTray ? "Tray" : "Exit");
+        ExecuteExit(dialog.MinimizeToTray);
+    }
+
+    private void ExecuteExit(bool minimizeToTray)
+    {
+        if (minimizeToTray)
+            ((App)Application.Current).EnterTrayMode();
+        else
+            Application.Current.Shutdown();
+    }
 }

@@ -189,6 +189,21 @@ public partial class OverlayWindow : Window
         return true;
     }
 
+    public bool TryUpdateExitPreference(bool askBeforeExit, string exitAction)
+    {
+        var settings = Settings with { AskBeforeExit = askBeforeExit, ExitAction = exitAction };
+        try
+        {
+            settings.Validate();
+            SettingsStore.Save(settings);
+        }
+        catch (Exception exception) when (exception is ArgumentException or
+            System.IO.IOException or UnauthorizedAccessException or System.Security.SecurityException)
+        { return false; }
+        Settings = settings;
+        return true;
+    }
+
     public void DrawInk(DrawingContext context)
     {
         foreach (var visual in DrawingCanvas.Children.OfType<PressureStrokeVisual>())

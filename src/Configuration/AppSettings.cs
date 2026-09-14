@@ -30,6 +30,10 @@ public sealed record AppSettings
     public bool StartWithWindows { get; init; }
     public bool UseSolidBackground { get; init; }
     public string BackgroundColor { get; init; } = "#FFFFFF";
+    public bool AskBeforeExit { get; init; } = true;
+
+    /// <summary>AskBeforeExit 为 false 时点击退出按钮直接执行的操作："" 占位、"Tray" 最小化到托盘、"Exit" 退出程序。</summary>
+    public string ExitAction { get; init; } = "";
 
     public void Validate()
     {
@@ -39,6 +43,8 @@ public sealed record AppSettings
         if (new[] { ToggleShortcut, CaptureShortcut, EraserShortcut }.Distinct().Count() != 3)
             throw new ArgumentException("截图、模式切换与橡皮擦不能使用相同的快捷键。");
         ParseBackgroundColor(BackgroundColor);
+        if (ExitAction is not ("" or "Tray" or "Exit"))
+            throw new ArgumentException("退出方式设置无效。");
     }
 
     public static Color ParseBackgroundColor(string text)

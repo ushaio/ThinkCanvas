@@ -23,6 +23,7 @@ public partial class SettingsWindow : Window
         ToggleShortcutBox.Text = _toggle.ToString();
         EraserShortcutBox.Text = _eraser.ToString();
         StartWithWindowsBox.IsChecked = overlay.Settings.StartWithWindows;
+        AskBeforeExitBox.IsChecked = overlay.Settings.AskBeforeExit;
         SolidBackgroundBox.IsChecked = overlay.Settings.UseSolidBackground;
         ColorBox.Text = overlay.Settings.BackgroundColor;
     }
@@ -61,6 +62,8 @@ public partial class SettingsWindow : Window
             CaptureShortcut = _capture, ToggleShortcut = _toggle,
             EraserShortcut = _eraser,
             StartWithWindows = StartWithWindowsBox.IsChecked == true,
+            AskBeforeExit = AskBeforeExitBox.IsChecked == true,
+            ExitAction = _overlay.Settings.ExitAction,
             UseSolidBackground = SolidBackgroundBox.IsChecked == true,
             BackgroundColor = ColorBox.Text.Trim().ToUpperInvariant()
         };
