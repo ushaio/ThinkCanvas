@@ -15,10 +15,10 @@ jobs:
 
     steps:
       - name: Check out repository
-        uses: actions/checkout@v4
+        uses: actions/checkout@v5
 
       - name: Set up .NET
-        uses: actions/setup-dotnet@v4
+        uses: actions/setup-dotnet@v5
         with:
           dotnet-version: 10.0.x
 
@@ -84,7 +84,7 @@ jobs:
           Copy-Item artifacts/ThinkCanvas-framework-dependent/ThinkCanvas.exe "artifacts/ThinkCanvas-${{ steps.version.outputs.value }}-win-x64-framework-dependent.exe"
 
       - name: Upload package
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v5
         with:
           name: ThinkCanvas-${{ steps.version.outputs.value }}-win-x64
           path: |
