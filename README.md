@@ -68,7 +68,7 @@ ThinkCanvas/
 
 推送 `v*` 标签会触发 GitHub Actions 的 Release 打包流程，使用 Release 配置生成 `win-x64` 自包含单文件 `ThinkCanvas.exe`，并同时提供 ZIP 压缩包。手动运行工作流只上传 Actions artifact，不会创建 Release。
 
-发版同时需维护 [CHANGELOG.md](CHANGELOG.md)：新版本开始开发当天添加 `vX.Y.Z 日期` 版本头（日期为开发开始日期，之后不再修改），版本内的功能与修复持续记录到对应小节。
+发版同时需维护 [CHANGELOG.md](CHANGELOG.md)：开始新的 fix / feature 当天，在顶部新增或复用 `Temp 日期` 版本头记录变更；发版时将 `Temp` 重命名为实际版本号 `vX.Y.Z`（日期保持为开发开始日），更新 csproj 版本号并推送 `v*` 标签。
 
 ## 输入回归验证
 
