@@ -85,15 +85,16 @@ public partial class ToolbarWindow : Window
     {
         Dispatcher.InvokeAsync(() =>
         {
-            ToggleButton.ToolTip = available ? $"切换模式 ({_overlay.Settings.ToggleShortcut})"
-                : "切换模式（快捷键已被占用）";
+            ToggleButton.ToolTip = HotkeyText("切换模式", _overlay.Settings.ToggleShortcut, _overlay.ToggleHotkeyAvailable);
             OperateButton.ToolTip = ToggleButton.ToolTip;
-            CaptureButton.ToolTip = _overlay.CaptureHotkeyAvailable ? $"截图 ({_overlay.Settings.CaptureShortcut})"
-                : "截图（快捷键已被占用）";
-            EraserButton.ToolTip = _overlay.EraserHotkeyAvailable ? $"橡皮擦 ({_overlay.Settings.EraserShortcut})"
-                : "橡皮擦（快捷键已被占用）";
+            CaptureButton.ToolTip = HotkeyText("截图", _overlay.Settings.CaptureShortcut, _overlay.CaptureHotkeyAvailable);
+            EraserButton.ToolTip = HotkeyText("橡皮擦", _overlay.Settings.EraserShortcut, _overlay.EraserHotkeyAvailable);
         });
     }
+
+    private static string HotkeyText(string action, Shortcut? shortcut, bool registered) =>
+        shortcut is null ? $"{action}（未设置快捷键）" :
+        registered ? $"{action} ({shortcut})" : $"{action}（快捷键已被占用）";
 
     private void OnPressureChanged(float? pressure)
     {

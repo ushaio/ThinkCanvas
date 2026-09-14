@@ -25,14 +25,14 @@ public sealed class CaptureService(OverlayWindow overlay, ToolbarWindow toolbar)
             await Task.Delay(160);
 
             var settings = overlay.Settings;
-            var desktop = settings.UseSolidBackground ? null : ScreenCapture.GrabDesktop(bounds);
-            var frame = ScreenCapture.Compose(bounds, desktop,
+            var desktop = ScreenCapture.GrabDesktop(bounds);
+            var desktopFrame = ScreenCapture.Compose(bounds, desktop, default, transform, overlay.DrawInk);
+            var solidFrame = ScreenCapture.Compose(bounds, null,
                 AppSettings.ParseBackgroundColor(settings.BackgroundColor), transform, overlay.DrawInk);
-            var selectionWindow = new RegionCaptureWindow(frame, bounds);
+            var selectionWindow = new RegionCaptureWindow(settings.UseSolidBackground ? solidFrame : desktopFrame, bounds);
             if (selectionWindow.ShowDialog() != true || selectionWindow.Selection is not { } region) return;
-            var image = new CroppedBitmap(frame, region);
-            image.Freeze();
-            new CaptureResultWindow(image).ShowDialog();
+            new CaptureResultWindow(desktopFrame, region, bounds, transform, overlay.DrawInk,
+                Colors.White, settings.UseSolidBackground).ShowDialog();
         }
         catch (Exception exception)
         {

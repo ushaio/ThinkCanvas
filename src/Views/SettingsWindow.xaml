@@ -41,6 +41,7 @@
                     <Trigger Property="IsMouseOver" Value="True"><Setter TargetName="Field" Property="BorderBrush" Value="#9EAAAD"/></Trigger>
                     <Trigger Property="IsKeyboardFocused" Value="True"><Setter TargetName="Field" Property="BorderBrush" Value="#19826A"/><Setter TargetName="Field" Property="BorderThickness" Value="2"/></Trigger>
                     <Trigger Property="IsEnabled" Value="False"><Setter TargetName="Field" Property="Opacity" Value="0.55"/></Trigger>
+                    <Trigger Property="Text" Value="未设置"><Setter Property="Foreground" Value="#9AA5A9"/></Trigger>
                 </ControlTemplate.Triggers>
             </ControlTemplate></Setter.Value></Setter>
         </Style>
@@ -89,10 +90,32 @@
             <Border Grid.Row="1" BorderBrush="#E4E8E9" BorderThickness="0,1,0,1">
                 <StackPanel Margin="24,22">
                     <StackPanel Orientation="Horizontal" Margin="0,0,0,16"><TextBlock Text="&#xE765;" FontFamily="Segoe MDL2 Assets" FontSize="15" Foreground="#21745F" VerticalAlignment="Center"/><TextBlock Text="快捷键" FontSize="14" FontWeight="SemiBold" Margin="9,0,0,0" VerticalAlignment="Center"/></StackPanel>
-                    <Grid><Grid.ColumnDefinitions><ColumnDefinition Width="150"/><ColumnDefinition/></Grid.ColumnDefinitions><Grid.RowDefinitions><RowDefinition Height="50"/><RowDefinition Height="50"/><RowDefinition Height="50"/></Grid.RowDefinitions>
-                        <TextBlock Text="截图" VerticalAlignment="Center" Foreground="#4F5A5E"/><TextBox x:Name="CaptureShortcutBox" Grid.Column="1" Style="{StaticResource TextField}" IsReadOnly="True" Cursor="Hand" PreviewKeyDown="Shortcut_OnKeyDown" ToolTip="点击后按下新的快捷键" AutomationProperties.Name="截图快捷键"/>
-                        <TextBlock Text="切换书写 / 操作" Grid.Row="1" VerticalAlignment="Center" Foreground="#4F5A5E"/><TextBox x:Name="ToggleShortcutBox" Grid.Row="1" Grid.Column="1" Style="{StaticResource TextField}" IsReadOnly="True" Cursor="Hand" PreviewKeyDown="Shortcut_OnKeyDown" ToolTip="点击后按下新的快捷键" AutomationProperties.Name="模式切换快捷键"/>
-                        <TextBlock Text="橡皮擦" Grid.Row="2" VerticalAlignment="Center" Foreground="#4F5A5E"/><TextBox x:Name="EraserShortcutBox" Grid.Row="2" Grid.Column="1" Style="{StaticResource TextField}" IsReadOnly="True" Cursor="Hand" PreviewKeyDown="Shortcut_OnKeyDown" ToolTip="点击后按下新的快捷键" AutomationProperties.Name="橡皮擦快捷键"/>
+                    <Grid><Grid.ColumnDefinitions><ColumnDefinition Width="150"/><ColumnDefinition/></Grid.ColumnDefinitions><Grid.RowDefinitions><RowDefinition Height="50"/><RowDefinition Height="Auto"/><RowDefinition Height="50"/><RowDefinition Height="50"/><RowDefinition Height="50"/></Grid.RowDefinitions>
+                        <TextBlock Text="功能切换" VerticalAlignment="Center" Foreground="#4F5A5E"/>
+                        <Grid Grid.Column="1">
+                            <TextBox x:Name="CycleShortcutBox" Style="{StaticResource TextField}" IsReadOnly="True" Cursor="Hand" PreviewKeyDown="Shortcut_OnKeyDown" Padding="12,0,36,0" ToolTip="在勾选的模式之间循环切换；优先级高于其他快捷键。点击右侧 × 或按 Delete 清除停用" AutomationProperties.Name="功能切换快捷键"/>
+                            <Button Style="{StaticResource IconButton}" Width="26" Height="26" HorizontalAlignment="Right" Margin="0,0,7,0" Click="ClearShortcut_OnClick" Tag="CycleShortcutBox" ToolTip="清空快捷键（停用）" AutomationProperties.Name="清空功能切换快捷键"><TextBlock Text="&#xE711;" FontFamily="Segoe MDL2 Assets" FontSize="10" Foreground="#667277"/></Button>
+                        </Grid>
+                        <StackPanel Grid.Row="1" Grid.Column="1" Orientation="Horizontal" HorizontalAlignment="Left" Margin="0,0,0,14">
+                            <CheckBox x:Name="CycleMouseBox" Content="鼠标" IsChecked="True" Margin="0,0,12,0"/>
+                            <CheckBox x:Name="CycleWritingBox" Content="手写" IsChecked="True" Margin="0,0,12,0"/>
+                            <CheckBox x:Name="CycleEraserBox" Content="橡皮擦" IsChecked="True"/>
+                        </StackPanel>
+                        <TextBlock Text="截图" Grid.Row="2" VerticalAlignment="Center" Foreground="#4F5A5E"/>
+                        <Grid Grid.Row="2" Grid.Column="1">
+                            <TextBox x:Name="CaptureShortcutBox" Style="{StaticResource TextField}" IsReadOnly="True" Cursor="Hand" PreviewKeyDown="Shortcut_OnKeyDown" Padding="12,0,36,0" ToolTip="点击后按下新的快捷键；点击右侧 × 或按 Delete 清除停用" AutomationProperties.Name="截图快捷键"/>
+                            <Button Style="{StaticResource IconButton}" Width="26" Height="26" HorizontalAlignment="Right" Margin="0,0,7,0" Click="ClearShortcut_OnClick" Tag="CaptureShortcutBox" ToolTip="清空快捷键（停用）" AutomationProperties.Name="清空截图快捷键"><TextBlock Text="&#xE711;" FontFamily="Segoe MDL2 Assets" FontSize="10" Foreground="#667277"/></Button>
+                        </Grid>
+                        <TextBlock Text="切换书写 / 操作" Grid.Row="3" VerticalAlignment="Center" Foreground="#4F5A5E"/>
+                        <Grid Grid.Row="3" Grid.Column="1">
+                            <TextBox x:Name="ToggleShortcutBox" Style="{StaticResource TextField}" IsReadOnly="True" Cursor="Hand" PreviewKeyDown="Shortcut_OnKeyDown" Padding="12,0,36,0" ToolTip="点击后按下新的快捷键；点击右侧 × 或按 Delete 清除停用" AutomationProperties.Name="模式切换快捷键"/>
+                            <Button Style="{StaticResource IconButton}" Width="26" Height="26" HorizontalAlignment="Right" Margin="0,0,7,0" Click="ClearShortcut_OnClick" Tag="ToggleShortcutBox" ToolTip="清空快捷键（停用）" AutomationProperties.Name="清空模式切换快捷键"><TextBlock Text="&#xE711;" FontFamily="Segoe MDL2 Assets" FontSize="10" Foreground="#667277"/></Button>
+                        </Grid>
+                        <TextBlock Text="橡皮擦" Grid.Row="4" VerticalAlignment="Center" Foreground="#4F5A5E"/>
+                        <Grid Grid.Row="4" Grid.Column="1">
+                            <TextBox x:Name="EraserShortcutBox" Style="{StaticResource TextField}" IsReadOnly="True" Cursor="Hand" PreviewKeyDown="Shortcut_OnKeyDown" Padding="12,0,36,0" ToolTip="点击后按下新的快捷键；点击右侧 × 或按 Delete 清除停用" AutomationProperties.Name="橡皮擦快捷键"/>
+                            <Button Style="{StaticResource IconButton}" Width="26" Height="26" HorizontalAlignment="Right" Margin="0,0,7,0" Click="ClearShortcut_OnClick" Tag="EraserShortcutBox" ToolTip="清空快捷键（停用）" AutomationProperties.Name="清空橡皮擦快捷键"><TextBlock Text="&#xE711;" FontFamily="Segoe MDL2 Assets" FontSize="10" Foreground="#667277"/></Button>
+                        </Grid>
                     </Grid>
                     <Border Height="1" Background="#E4E8E9" Margin="0,20"/>
                     <StackPanel Orientation="Horizontal" Margin="0,0,0,16"><TextBlock Text="&#xE790;" FontFamily="Segoe MDL2 Assets" FontSize="15" Foreground="#21745F" VerticalAlignment="Center"/><TextBlock Text="截图背景" FontSize="14" FontWeight="SemiBold" Margin="9,0,0,0" VerticalAlignment="Center"/></StackPanel>

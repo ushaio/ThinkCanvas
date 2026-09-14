@@ -24,9 +24,13 @@ public sealed record Shortcut(Key Key, ModifierKeys Modifiers)
 
 public sealed record AppSettings
 {
-    public Shortcut ToggleShortcut { get; init; } = new(Key.A, ModifierKeys.Control | ModifierKeys.Shift);
-    public Shortcut CaptureShortcut { get; init; } = new(Key.S, ModifierKeys.Control | ModifierKeys.Shift);
-    public Shortcut EraserShortcut { get; init; } = new(Key.E, ModifierKeys.Control | ModifierKeys.Shift);
+    public Shortcut? CycleShortcut { get; init; } = new(Key.Q, ModifierKeys.Control | ModifierKeys.Shift);
+    public Shortcut? ToggleShortcut { get; init; } = new(Key.A, ModifierKeys.Control | ModifierKeys.Shift);
+    public Shortcut? CaptureShortcut { get; init; } = new(Key.S, ModifierKeys.Control | ModifierKeys.Shift);
+    public Shortcut? EraserShortcut { get; init; } = new(Key.E, ModifierKeys.Control | ModifierKeys.Shift);
+    public bool CycleIncludeMouse { get; init; } = true;
+    public bool CycleIncludeWriting { get; init; } = true;
+    public bool CycleIncludeEraser { get; init; } = true;
     public bool StartWithWindows { get; init; }
     public bool UseSolidBackground { get; init; }
     public string BackgroundColor { get; init; } = "#FFFFFF";
@@ -37,11 +41,18 @@ public sealed record AppSettings
 
     public void Validate()
     {
-        if (ToggleShortcut is null || CaptureShortcut is null || EraserShortcut is null ||
-            !ToggleShortcut.IsValid || !CaptureShortcut.IsValid || !EraserShortcut.IsValid)
-            throw new ArgumentException("快捷键需要包含 Ctrl、Alt 或 Shift，以及一个普通按键。");
-        if (new[] { ToggleShortcut, CaptureShortcut, EraserShortcut }.Distinct().Count() != 3)
-            throw new ArgumentException("截图、模式切换与橡皮擦不能使用相同的快捷键。");
+        (string Name, Shortcut? Shortcut)[] bindings =
+        [
+            ("功能切换", CycleShortcut), ("截图", CaptureShortcut),
+            ("模式切换", ToggleShortcut), ("橡皮擦", EraserShortcut)
+        ];
+        if (bindings.Any(binding => binding.Shortcut is { } shortcut && !shortcut.IsValid))
+            throw new ArgumentException("快捷键需要包含 Ctrl、Alt 或 Shift，以及一个普通按键；留空表示停用。");
+        var enabled = bindings.Where(binding => binding.Shortcut is not null).Select(binding => binding.Shortcut).ToList();
+        if (enabled.Distinct().Count() != enabled.Count)
+            throw new ArgumentException("已启用的快捷键不能相同。");
+        if (!CycleIncludeMouse && !CycleIncludeWriting && !CycleIncludeEraser)
+            throw new ArgumentException("功能切换至少需要勾选鼠标、手写或橡皮擦中的一个。");
         ParseBackgroundColor(BackgroundColor);
         if (ExitAction is not ("" or "Tray" or "Exit"))
             throw new ArgumentException("退出方式设置无效。");

@@ -25,6 +25,7 @@ public partial class OverlayWindow : Window
     private bool _toggleHotkeyRegistered;
     private bool _captureHotkeyRegistered;
     private bool _eraserHotkeyRegistered;
+    private bool _cycleHotkeyRegistered;
     private bool _escapeHotkeyRegistered;
     private double _width = 4;
     private Color _color = Colors.Red;
@@ -33,6 +34,7 @@ public partial class OverlayWindow : Window
     public bool ToggleHotkeyAvailable => _toggleHotkeyRegistered;
     public bool CaptureHotkeyAvailable => _captureHotkeyRegistered;
     public bool EraserHotkeyAvailable => _eraserHotkeyRegistered;
+    public bool CycleHotkeyAvailable => _cycleHotkeyRegistered;
     public AppSettings Settings { get; private set; }
     public OverlayMode Mode => _mode;
     public bool IsBusy { get; set; }
@@ -120,6 +122,19 @@ public partial class OverlayWindow : Window
 
     public void ToggleMode() => SetMode(_mode == OverlayMode.Writing ? OverlayMode.Passthrough : OverlayMode.Writing);
 
+    /// <summary>按设置的候选模式（鼠标 → 手写 → 橡皮擦 顺序）循环切换；当前不在候选中时切到第一个候选。</summary>
+    public void CycleMode()
+    {
+        List<OverlayMode> candidates = [];
+        if (Settings.CycleIncludeMouse) candidates.Add(OverlayMode.Passthrough);
+        if (Settings.CycleIncludeWriting) candidates.Add(OverlayMode.Writing);
+        if (Settings.CycleIncludeEraser) candidates.Add(OverlayMode.Erasing);
+        if (candidates.Count == 0)
+            return;
+        var index = candidates.IndexOf(_mode);
+        SetMode(candidates[(index + 1) % candidates.Count]);
+    }
+
     public void SetColor(Color color) => _color = color;
     public void SetWidth(double width) => _width = Math.Clamp(width, 1, 20);
 
@@ -128,18 +143,21 @@ public partial class OverlayWindow : Window
         _toggleHotkeyRegistered = RegisterShortcut(1, Settings.ToggleShortcut);
         _captureHotkeyRegistered = RegisterShortcut(3, Settings.CaptureShortcut);
         _eraserHotkeyRegistered = RegisterShortcut(4, Settings.EraserShortcut);
+        _cycleHotkeyRegistered = RegisterShortcut(5, Settings.CycleShortcut);
         Toolbar?.SetHotkeyAvailable(_toggleHotkeyRegistered);
     }
 
-    private bool RegisterShortcut(int id, Shortcut shortcut) => NativeMethods.RegisterHotKey(_hwnd, id,
-        (uint)shortcut.Modifiers | NativeMethods.MOD_NOREPEAT, (uint)KeyInterop.VirtualKeyFromKey(shortcut.Key));
+    private bool RegisterShortcut(int id, Shortcut? shortcut) => shortcut is { } s &&
+        NativeMethods.RegisterHotKey(_hwnd, id,
+            (uint)s.Modifiers | NativeMethods.MOD_NOREPEAT, (uint)KeyInterop.VirtualKeyFromKey(s.Key));
 
     public void SuspendShortcuts()
     {
         NativeMethods.UnregisterHotKey(_hwnd, 1);
         NativeMethods.UnregisterHotKey(_hwnd, 3);
         NativeMethods.UnregisterHotKey(_hwnd, 4);
-        _toggleHotkeyRegistered = _captureHotkeyRegistered = _eraserHotkeyRegistered = false;
+        NativeMethods.UnregisterHotKey(_hwnd, 5);
+        _toggleHotkeyRegistered = _captureHotkeyRegistered = _eraserHotkeyRegistered = _cycleHotkeyRegistered = false;
     }
 
     public void ResumeShortcuts()
@@ -157,12 +175,15 @@ public partial class OverlayWindow : Window
         NativeMethods.UnregisterHotKey(_hwnd, 1);
         NativeMethods.UnregisterHotKey(_hwnd, 3);
         NativeMethods.UnregisterHotKey(_hwnd, 4);
+        NativeMethods.UnregisterHotKey(_hwnd, 5);
         _toggleHotkeyRegistered = RegisterShortcut(1, settings.ToggleShortcut);
         _captureHotkeyRegistered = RegisterShortcut(3, settings.CaptureShortcut);
         _eraserHotkeyRegistered = RegisterShortcut(4, settings.EraserShortcut);
-        error = !_toggleHotkeyRegistered ? $"切换快捷键 {settings.ToggleShortcut} 已被占用。" :
-            !_captureHotkeyRegistered ? $"截图快捷键 {settings.CaptureShortcut} 已被占用。" :
-            !_eraserHotkeyRegistered ? $"橡皮擦快捷键 {settings.EraserShortcut} 已被占用。" : "";
+        _cycleHotkeyRegistered = RegisterShortcut(5, settings.CycleShortcut);
+        error = settings.ToggleShortcut is { } toggle && !_toggleHotkeyRegistered ? $"切换快捷键 {toggle} 已被占用。" :
+            settings.CaptureShortcut is { } capture && !_captureHotkeyRegistered ? $"截图快捷键 {capture} 已被占用。" :
+            settings.EraserShortcut is { } eraser && !_eraserHotkeyRegistered ? $"橡皮擦快捷键 {eraser} 已被占用。" :
+            settings.CycleShortcut is { } cycle && !_cycleHotkeyRegistered ? $"功能切换快捷键 {cycle} 已被占用。" : "";
         if (error.Length == 0)
         {
             try
@@ -178,6 +199,7 @@ public partial class OverlayWindow : Window
             NativeMethods.UnregisterHotKey(_hwnd, 1);
             NativeMethods.UnregisterHotKey(_hwnd, 3);
             NativeMethods.UnregisterHotKey(_hwnd, 4);
+            NativeMethods.UnregisterHotKey(_hwnd, 5);
             try { StartupManager.SetEnabled(previous.StartWithWindows); }
             catch { }
             Settings = previous;
@@ -221,6 +243,8 @@ public partial class OverlayWindow : Window
             NativeMethods.UnregisterHotKey(_hwnd, 3);
         if (_eraserHotkeyRegistered)
             NativeMethods.UnregisterHotKey(_hwnd, 4);
+        if (_cycleHotkeyRegistered)
+            NativeMethods.UnregisterHotKey(_hwnd, 5);
         if (_escapeHotkeyRegistered)
             NativeMethods.UnregisterHotKey(_hwnd, 2);
     }
@@ -244,6 +268,13 @@ public partial class OverlayWindow : Window
         switch (msg)
         {
             case NativeMethods.WM_HOTKEY:
+                // 功能切换快捷键优先级最高：即使其他快捷键在弹窗/截图期间被挂起也保持可用。
+                if (wParam.ToInt32() == 5)
+                {
+                    CycleMode();
+                    handled = true;
+                    break;
+                }
                 if (IsBusy)
                 {
                     handled = true;

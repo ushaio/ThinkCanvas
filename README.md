@@ -4,7 +4,7 @@ ThinkCanvas 是一个 Windows WPF 输入验证 Demo，用于验证数位板、�
 
 本项目采用 [GNU General Public License v3.0](LICENSE)（GPL-3.0-only）授权。
 
-当前版本：`0.0.5`
+当前版本：`0.0.6`
 
 ## 项目结构
 
@@ -39,10 +39,13 @@ ThinkCanvas/
 
 | 快捷键 | 操作 |
 | --- | --- |
+| `Ctrl+Shift+Q` | 功能切换：在勾选的模式（鼠标（操作）、手写、橡皮擦，默认全选）之间循环（默认快捷键，优先级高于其他快捷键） |
 | `Ctrl+Shift+A` | 在操作模式和书写模式之间切换 |
 | `Esc` | 在书写模式下返回操作模式 |
 | `Ctrl+Shift+S` | 启动鼠标框选截图（默认快捷键） |
 | `Ctrl+Shift+E` | 切换到橡皮擦模式（默认快捷键） |
+
+所有快捷键都可以在设置中点击输入框右侧的 `×` 或按 `Delete` 清空以停用。
 
 数位板侧键可以在驱动中映射为 `Ctrl+Shift+A`，程序不依赖具体厂商 API。
 
@@ -52,7 +55,7 @@ ThinkCanvas/
 
 点击工具栏的截图按钮，或按下截图快捷键后进入全屏框选。按住鼠标左键拖动选区，松开后显示预览；预览中可以复制到剪贴板或保存 PNG。框选时按右键或 `Esc` 可取消。截图期间工具栏与绘画窗口会隐藏，完成或取消后恢复原来的模式。
 
-默认截图包含桌面与笔迹。勾选“使用纯色背景（仅保留笔迹）”后，桌面会替换为所选颜色，截图只保留背景与笔迹。背景可以使用预设色，也可以输入 `#RRGGBB` 自定义颜色。
+默认截图包含桌面与笔迹。截图预览窗口中可在复制按钮左侧快速切换背景：**保留背景**（桌面原图与笔迹）或**自定义背景**（纯色底 + 笔迹），自定义时可选预设色或输入 `#RRGGBB`，复制和保存均按当前所选背景输出。设置中的“使用纯色背景（仅保留笔迹）”仅决定框选阶段与预览的初始背景。
 
 ### 退出与托盘
 
@@ -60,13 +63,22 @@ ThinkCanvas/
 
 ### 快捷键设置
 
-点击设置中的快捷键输入框并按下新的组合键，保存后立即生效。截图、模式切换和橡皮擦快捷键不能相同；快捷键被其他程序占用时会显示错误并回退。设置中还可以启用当前用户的 Windows 开机自启动。设置保存在 `%AppData%/ThinkCanvas/settings.json`，下次启动时自动恢复。
+点击设置中的快捷键输入框并按下新的组合键，保存后立即生效；点击输入框右侧的 `×` 或按 `Delete`/`Backspace` 可清空该快捷键（显示灰色的“未设置”，即停用）。已启用的快捷键不能相同；快捷键被其他程序占用时会显示错误并回退。功能切换下方的“循环切换”复选框决定参与循环的模式（至少保留一个），当前模式不在候选中时，按下功能切换会切到最左侧的候选模式。设置中还可以启用当前用户的 Windows 开机自启动。设置保存在 `%AppData%/ThinkCanvas/settings.json`，下次启动时自动恢复。
 
 ## 运行与构建
 
 项目目标框架为 `.NET 10 Windows`，构建需要安装 .NET 10 SDK。当前可运行版本位于 `bin/Release/net10.0-windows/ThinkCanvas.exe`；更新后请先退出旧实例，再启动新版本。
 
 推送 `v*` 标签会触发 GitHub Actions 的 Release 打包流程，使用 Release 配置生成 `win-x64` 自包含单文件 `ThinkCanvas.exe`，并同时提供 ZIP 压缩包。手动运行工作流只上传 Actions artifact，不会创建 Release。
+
+本地打包使用项目自带的 SDK（`.tools/dotnet`），运行 `packaging` 目录下的脚本即可：
+
+```powershell
+packaging\publish-self-contained.ps1          # 自包含单文件 -> publish\ThinkCanvas.exe（零依赖）
+packaging\publish-framework-dependent.ps1     # 框架依赖单文件 -> publish-fdd\ThinkCanvas.exe（需 .NET 10 Desktop Runtime）
+```
+
+两个脚本都会把 NuGet 缓存指向 `.tools/packages`（离线可用）；CI 发版使用相同参数，本地与 Release 产物一致。
 
 发版同时需维护 [CHANGELOG.md](CHANGELOG.md)：开始新的 fix / feature 当天，在顶部新增或复用 `Temp 日期` 版本头记录变更；发版时将 `Temp` 重命名为实际版本号 `vX.Y.Z`（日期保持为开发开始日），更新 csproj 版本号并推送 `v*` 标签。
 
