@@ -6,7 +6,7 @@
 
 ### 修复
 
-1. CI 的 GitHub Actions 升级至 Node 24 原生版本（`checkout`/`setup-dotnet`/`upload-artifact` v4 → v5），消除 Node.js 20 弃用警告
+1. CI 的 GitHub Actions 升级至 Node 24 原生版本（`checkout`/`setup-dotnet` v5、`upload-artifact` v6），消除 Node.js 20 弃用警告
 
 ## v0.0.6 2026-09-14
 

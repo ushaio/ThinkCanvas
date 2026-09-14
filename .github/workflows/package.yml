@@ -84,7 +84,7 @@ jobs:
           Copy-Item artifacts/ThinkCanvas-framework-dependent/ThinkCanvas.exe "artifacts/ThinkCanvas-${{ steps.version.outputs.value }}-win-x64-framework-dependent.exe"
 
       - name: Upload package
-        uses: actions/upload-artifact@v5
+        uses: actions/upload-artifact@v6
         with:
           name: ThinkCanvas-${{ steps.version.outputs.value }}-win-x64
           path: |
