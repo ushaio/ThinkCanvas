@@ -19,6 +19,7 @@ ThinkCanvas/
 │   └── Views/          # WPF 窗口及其后台代码
 ├── tests/              # 交互式桌面烟雾测试
 ├── App.xaml(.cs)       # WPF 应用入口
+├── CHANGELOG.md        # 更新日志
 └── ThinkCanvas.csproj  # 主项目配置
 ```
 
@@ -66,6 +67,8 @@ ThinkCanvas/
 项目目标框架为 `.NET 10 Windows`，构建需要安装 .NET 10 SDK。当前可运行版本位于 `bin/Release/net10.0-windows/ThinkCanvas.exe`；更新后请先退出旧实例，再启动新版本。
 
 推送 `v*` 标签会触发 GitHub Actions 的 Release 打包流程，使用 Release 配置生成 `win-x64` 自包含单文件 `ThinkCanvas.exe`，并同时提供 ZIP 压缩包。手动运行工作流只上传 Actions artifact，不会创建 Release。
+
+发版同时需维护 [CHANGELOG.md](CHANGELOG.md)：新版本开始开发当天添加 `vX.Y.Z 日期` 版本头（日期为开发开始日期，之后不再修改），版本内的功能与修复持续记录到对应小节。
 
 ## 输入回归验证
 
