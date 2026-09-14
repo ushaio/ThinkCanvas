@@ -58,11 +58,11 @@ jobs:
           [xml]$project = Get-Content ThinkCanvas.csproj
           "value=$($project.Project.PropertyGroup.Version)" >> $env:GITHUB_OUTPUT
 
-      - name: Create ZIP archive
+      - name: Package artifacts
         shell: pwsh
         run: |
           Compress-Archive -Path artifacts/ThinkCanvas/* -DestinationPath "artifacts/ThinkCanvas-${{ steps.version.outputs.value }}-win-x64.zip"
-          Compress-Archive -Path artifacts/ThinkCanvas-framework-dependent/* -DestinationPath "artifacts/ThinkCanvas-${{ steps.version.outputs.value }}-win-x64-framework-dependent.zip"
+          Copy-Item artifacts/ThinkCanvas-framework-dependent/ThinkCanvas.exe "artifacts/ThinkCanvas-${{ steps.version.outputs.value }}-win-x64-framework-dependent.exe"
 
       - name: Upload package
         uses: actions/upload-artifact@v4
@@ -70,7 +70,7 @@ jobs:
           name: ThinkCanvas-${{ steps.version.outputs.value }}-win-x64
           path: |
             artifacts/ThinkCanvas-${{ steps.version.outputs.value }}-win-x64.zip
-            artifacts/ThinkCanvas-${{ steps.version.outputs.value }}-win-x64-framework-dependent.zip
+            artifacts/ThinkCanvas-${{ steps.version.outputs.value }}-win-x64-framework-dependent.exe
             artifacts/ThinkCanvas/ThinkCanvas.exe
           if-no-files-found: error
 
@@ -82,7 +82,7 @@ jobs:
         run: >-
           gh release create "${{ github.ref_name }}"
           "artifacts/ThinkCanvas-${{ steps.version.outputs.value }}-win-x64.zip"
-          "artifacts/ThinkCanvas-${{ steps.version.outputs.value }}-win-x64-framework-dependent.zip"
+          "artifacts/ThinkCanvas-${{ steps.version.outputs.value }}-win-x64-framework-dependent.exe"
           "artifacts/ThinkCanvas/ThinkCanvas.exe"
           --title "ThinkCanvas ${{ steps.version.outputs.value }}"
           --generate-notes
