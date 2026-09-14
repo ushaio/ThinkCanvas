@@ -34,6 +34,7 @@ jobs:
           --no-restore
           -p:PublishSingleFile=true
           -p:IncludeNativeLibrariesForSelfExtract=true
+          -p:EnableCompressionInSingleFile=true
           -p:DebugType=None
           -p:DebugSymbols=false
           --output artifacts/ThinkCanvas

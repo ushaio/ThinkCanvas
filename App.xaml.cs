@@ -50,7 +50,7 @@ public partial class App : Application
 
     private void CreateTrayIcon()
     {
-        _trayIconSource = BuildTrayIcon();
+        _trayIconSource = TryExtractAppIcon() ?? BuildTrayIcon();
         _trayIcon = new WF.NotifyIcon
         {
             Icon = _trayIconSource,
@@ -90,6 +90,19 @@ public partial class App : Application
         _toolbar.Show();
         _overlay.ResumeShortcuts();
         _toolbar.EnsureAboveOverlay();
+    }
+
+    /// <summary>从 exe 内嵌图标提取托盘图标，与资源管理器显示保持一致；提取失败时由调用方回退到运行时绘制。</summary>
+    private static Icon? TryExtractAppIcon()
+    {
+        try
+        {
+            var exePath = Environment.ProcessPath;
+            return string.IsNullOrEmpty(exePath) ? null : Icon.ExtractAssociatedIcon(exePath);
+        }
+        catch (Exception exception) when (exception is ArgumentException or System.IO.IOException or
+            System.ComponentModel.Win32Exception or InvalidOperationException)
+        { return null; }
     }
 
     private static Icon BuildTrayIcon()
